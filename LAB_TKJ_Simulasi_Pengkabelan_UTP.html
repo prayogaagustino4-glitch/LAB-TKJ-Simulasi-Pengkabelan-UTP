@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab TKJ 2 - Modul Simulasi Pengkabelan UTP</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        darkBg: '#0f172a',
+                        cardBg: '#1e293b',
+                        cardBorder: '#334155',
+                        accentBlue: '#38bdf8',
+                        accentGreen: '#22c55e',
+                        accentAmber: '#f59e0b',
+                        accentRed: '#ef4444',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Glowing & Cable Wire Aesthetics */
+        .glow-green {
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.7);
+        }
+        .glow-red {
+            box-shadow: 0 0 12px rgba(239, 68, 68, 0.7);
+        }
+        .glow-blue {
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.7);
+        }
+        .wire-stripe-green-white {
+            background: repeating-linear-gradient(45deg, #22c55e, #22c55e 6px, #ffffff 6px, #ffffff 12px);
+        }
+        .wire-stripe-orange-white {
+            background: repeating-linear-gradient(45deg, #f97316, #f97316 6px, #ffffff 6px, #ffffff 12px);
+        }
+        .wire-stripe-blue-white {
+            background: repeating-linear-gradient(45deg, #3b82f6, #3b82f6 6px, #ffffff 6px, #ffffff 12px);
+        }
+        .wire-stripe-brown-white {
+            background: repeating-linear-gradient(45deg, #854d0e, #854d0e 6px, #ffffff 6px, #ffffff 12px);
+        }
+        .wire-solid-green { background-color: #15803d; }
+        .wire-solid-orange { background-color: #ea580c; }
+        .wire-solid-blue { background-color: #1d4ed8; }
+        .wire-solid-brown { background-color: #713f12; }
+
+        /* Custom Scrollbar for Logs */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-darkBg text-slate-100 font-sans min-h-screen flex flex-col">
+
+    <!-- HEADER / TOPBAR -->
+    <header class="bg-cardBg border-b border-cardBorder px-4 py-3 shadow-lg flex-none">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-sky-500/10 border border-sky-500/30 rounded-xl text-sky-400">
+                    <i class="fa-solid fa-network-wired text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                        LAB TKJ 2 <span class="text-xs px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-mono border border-sky-500/30">Modul Simulasi UTP</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Pengkabelan UTP Cat5e/Cat6: Straight-Through vs Crossover Standard (TIA/EIA-568A/B)</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 text-xs">
+                <div class="bg-slate-900 border border-slate-700/60 rounded-lg px-3 py-1.5 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="text-slate-300 font-mono">STATUS: SIMULATOR ACTIVE</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT AREA (3 PANELS) -->
+    <main class="max-w-7xl w-full mx-auto p-4 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        <!-- PANEL KIRI: KONFIGURASI WARNA PIN 1-8 (4 Cols) -->
+        <section class="lg:col-span-4 bg-cardBg border border-cardBorder rounded-2xl p-4 flex flex-col gap-4 shadow-md">
+            <div class="border-b border-slate-700/60 pb-3 flex justify-between items-center">
+                <h2 class="font-bold text-base text-slate-200 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-sky-400"></i> Konfigurasi Urutan Warna
+                </h2>
+                <span class="text-xs text-slate-400 bg-slate-800 px-2 py-1 rounded">TIA/EIA Standard</span>
+            </div>
+
+            <!-- TAB / CONNECTOR A & B SELECTOR CONTAINER -->
+            <div class="space-y-4 overflow-y-auto max-h-[calc(100vh-220px)] pr-1">
+                
+                <!-- UJUNG A (PLUG A) -->
+                <div class="bg-slate-900/80 border border-slate-700/60 rounded-xl p-3.5 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-sm text-sky-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-plug text-xs"></i> Ujung A (Plug A)
+                        </span>
+                        <!-- Presets Dropdown A -->
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="applyPreset('A', '568B')" class="px-2 py-1 text-xs bg-slate-800 hover:bg-sky-600/30 text-sky-300 border border-sky-500/30 rounded transition">
+                                568B
+                            </button>
+                            <button onclick="applyPreset('A', '568A')" class="px-2 py-1 text-xs bg-slate-800 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded transition">
+                                568A
+                            </button>
+                            <button onclick="randomizeWires('A')" title="Random/Acak" class="px-2 py-1 text-xs bg-slate-800 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded transition">
+                                <i class="fa-solid fa-dice"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 8 Pin Inputs Plug A -->
+                    <div id="pins-container-A" class="space-y-1.5">
+                        <!-- Dynamic PIN rows for A via JS -->
+                    </div>
+                </div>
+
+                <!-- UJUNG B (PLUG B) -->
+                <div class="bg-slate-900/80 border border-slate-700/60 rounded-xl p-3.5 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-sm text-amber-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-plug text-xs"></i> Ujung B (Plug B)
+                        </span>
+                        <!-- Presets Dropdown B -->
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="applyPreset('B', '568B')" class="px-2 py-1 text-xs bg-slate-800 hover:bg-sky-600/30 text-sky-300 border border-sky-500/30 rounded transition">
+                                568B
+                            </button>
+                            <button onclick="applyPreset('B', '568A')" class="px-2 py-1 text-xs bg-slate-800 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded transition">
+                                568A
+                            </button>
+                            <button onclick="randomizeWires('B')" title="Random/Acak" class="px-2 py-1 text-xs bg-slate-800 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded transition">
+                                <i class="fa-solid fa-dice"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 8 Pin Inputs Plug B -->
+                    <div id="pins-container-B" class="space-y-1.5">
+                        <!-- Dynamic PIN rows for B via JS -->
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- PANEL TENGAH: VISUALISASI RJ45 & CABLE TESTER (5 Cols) -->
+        <section class="lg:col-span-5 flex flex-col gap-4">
+            
+            <!-- VISUAL CONNECTOR & WIRE STRIP DISPLAY -->
+            <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-md flex flex-col gap-3">
+                <h2 class="font-bold text-base text-slate-200 flex items-center justify-between">
+                    <span class="flex items-center gap-2"><i class="fa-solid fa-microchip text-sky-400"></i> Visualisasi RJ45 Plug</span>
+                    <span class="text-xs text-slate-400 font-mono">Pin 1 -> 8 (Kiri ke Kanan)</span>
+                </h2>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- RJ45 Graphic A -->
+                    <div class="bg-slate-900/90 border border-slate-700/80 rounded-xl p-3 flex flex-col items-center">
+                        <span class="text-xs font-bold text-sky-400 mb-2">CONNECTOR A</span>
+                        <div class="w-full bg-slate-800/80 p-2 rounded-lg border border-slate-700 flex justify-center gap-1.5 h-20 items-end">
+                            <div id="wire-visual-A" class="flex justify-between w-full h-full items-end gap-1">
+                                <!-- Dynamic 8 Wire Strips A -->
+                            </div>
+                        </div>
+                        <span class="text-[10px] text-slate-400 mt-1 font-mono">Klip Menghadap Bawah</span>
+                    </div>
+
+                    <!-- RJ45 Graphic B -->
+                    <div class="bg-slate-900/90 border border-slate-700/80 rounded-xl p-3 flex flex-col items-center">
+                        <span class="text-xs font-bold text-amber-400 mb-2">CONNECTOR B</span>
+                        <div class="w-full bg-slate-800/80 p-2 rounded-lg border border-slate-700 flex justify-center gap-1.5 h-20 items-end">
+                            <div id="wire-visual-B" class="flex justify-between w-full h-full items-end gap-1">
+                                <!-- Dynamic 8 Wire Strips B -->
+                            </div>
+                        </div>
+                        <span class="text-[10px] text-slate-400 mt-1 font-mono">Klip Menghadap Bawah</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CABLE TESTER HARDWARE SIMULATION -->
+            <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-md flex-1 flex flex-col justify-between">
+                <div class="flex justify-between items-center border-b border-slate-700/60 pb-3">
+                    <div>
+                        <h2 class="font-bold text-base text-slate-200 flex items-center gap-2">
+                            <i class="fa-solid fa-box-diagnostic text-emerald-400"></i> Network Cable Tester
+                        </h2>
+                        <p class="text-xs text-slate-400">Master & Remote Unit LED Scanning</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-slate-400">Speed:</span>
+                        <select id="test-speed" class="bg-slate-900 border border-slate-700 text-xs rounded px-2 py-1 text-slate-300">
+                            <option value="800">Slow (800ms)</option>
+                            <option value="400" selected>Normal (400ms)</option>
+                            <option value="150">Fast (150ms)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- CABLE TESTER LED BOX HARDWARE GRAPHIC -->
+                <div class="my-4 bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-slate-700 rounded-2xl p-5 shadow-2xl relative">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-xs font-bold font-mono tracking-widest text-slate-400 uppercase">LAN TESTER CT-882</span>
+                        <div class="flex gap-1.5 items-center">
+                            <span class="text-[10px] text-slate-400">POWER</span>
+                            <span id="power-led" class="w-2.5 h-2.5 rounded-full bg-slate-700 transition"></span>
+                        </div>
+                    </div>
+
+                    <!-- LED MATRIX (MASTER vs REMOTE) -->
+                    <div class="grid grid-cols-2 gap-6 bg-slate-900/90 p-4 rounded-xl border border-slate-800">
+                        
+                        <!-- MASTER UNIT (A) -->
+                        <div class="space-y-2">
+                            <div class="text-center text-xs font-bold text-sky-400 border-b border-slate-800 pb-1">MASTER (TX)</div>
+                            <div id="master-leds" class="space-y-1.5">
+                                <!-- 8 LEDs Master -->
+                            </div>
+                        </div>
+
+                        <!-- REMOTE UNIT (B) -->
+                        <div class="space-y-2">
+                            <div class="text-center text-xs font-bold text-amber-400 border-b border-slate-800 pb-1">REMOTE (RX)</div>
+                            <div id="remote-leds" class="space-y-1.5">
+                                <!-- 8 LEDs Remote -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TESTER CONTROLS -->
+                <div class="grid grid-cols-3 gap-2">
+                    <button id="btn-auto-test" onclick="startAutoTest()" class="bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 px-3 rounded-xl font-medium text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-600/20">
+                        <i class="fa-solid fa-play"></i> Auto Test
+                    </button>
+                    <button id="btn-step-test" onclick="stepTest()" class="bg-sky-600 hover:bg-sky-500 text-white py-2.5 px-3 rounded-xl font-medium text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-sky-600/20">
+                        <i class="fa-solid fa-forward-step"></i> Step Next
+                    </button>
+                    <button onclick="resetTest()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 py-2.5 px-3 rounded-xl font-medium text-xs flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-rotate-left"></i> Reset
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- PANEL KANAN: ANALISIS, STATUS & LOG (3 Cols) -->
+        <section class="lg:col-span-3 flex flex-col gap-4">
+            
+            <!-- STATUS RESULT CARD -->
+            <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-md flex flex-col gap-3">
+                <h2 class="font-bold text-base text-slate-200 flex items-center gap-2">
+                    <i class="fa-solid fa-square-poll-vertical text-sky-400"></i> Status Pengujian
+                </h2>
+                
+                <div id="status-card" class="bg-slate-900 border border-slate-700 rounded-xl p-4 text-center transition flex flex-col items-center justify-center gap-2 min-h-[110px]">
+                    <i id="status-icon" class="fa-solid fa-circle-question text-3xl text-slate-500"></i>
+                    <div id="status-title" class="font-bold text-sm text-slate-300">Belum Diuji</div>
+                    <p id="status-desc" class="text-xs text-slate-400">Klik 'Auto Test' atau 'Step Next' untuk mulai pengujian.</p>
+                </div>
+            </div>
+
+            <!-- PIN MAPPING MATRIX TABLE -->
+            <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-md flex flex-col gap-3">
+                <h2 class="font-bold text-xs uppercase tracking-wider text-slate-300 flex items-center justify-between">
+                    <span>Matriks Pemetaan Pin</span>
+                    <span class="text-[10px] text-sky-400 font-mono">Tx/Rx Signal</span>
+                </h2>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="border-b border-slate-700 text-slate-400 font-mono text-[11px]">
+                                <th class="py-1.5 px-1 text-center">Pin A</th>
+                                <th class="py-1.5 px-1 text-center">Pin B</th>
+                                <th class="py-1.5 px-1">Fungsi Sinyal (10/100M)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mapping-table-body" class="divide-y divide-slate-800 text-slate-300 font-mono">
+                            <!-- Dynamic Row JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- THEORY & USE CASE EXPLANATION -->
+            <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-md flex-1 flex flex-col gap-2">
+                <h2 class="font-bold text-xs uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                    <i class="fa-solid fa-book-open text-amber-400"></i> Teori & Penggunaan
+                </h2>
+                
+                <div id="theory-content" class="text-xs text-slate-300 space-y-2 bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 leading-relaxed overflow-y-auto max-h-[160px]">
+                    <p class="text-slate-400 italic">Pilih atau pasang konfigurasi warna kawat untuk melihat panduan penggunaan kabel di jaringan nyata.</p>
+                </div>
+            </div>
+
+            <!-- ACTIVITY LOG -->
+            <div class="bg-cardBg border border-cardBorder rounded-2xl p-3 shadow-md">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-[11px] font-bold font-mono text-slate-400 uppercase tracking-wider">Log Pengujian</span>
+                    <button onclick="clearLogs()" class="text-[10px] text-slate-400 hover:text-rose-400"><i class="fa-solid fa-trash"></i> Clear</button>
+                </div>
+                <div id="activity-log" class="bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-[11px] font-mono h-24 overflow-y-auto space-y-1 text-slate-400">
+                    <div>[00:00] System ready. Konfigurasi awal dimuat.</div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-cardBg border-t border-cardBorder py-2.5 px-4 text-center text-xs text-slate-500 flex-none">
+        Simulasi Pengkabelan UTP &copy; Lab Teknik Komputer dan Jaringan (TKJ) - Standar TIA/EIA-568A & 568B
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // MASTER COLOR DEFINITIONS
+        const COLOR_DEFINITIONS = {
+            'WO': { id: 'WO', name: 'Putih Orange', bgClass: 'wire-stripe-orange-white', hex: '#f97316', isStripe: true },
+            'O':  { id: 'O',  name: 'Orange', bgClass: 'wire-solid-orange', hex: '#ea580c', isStripe: false },
+            'WG': { id: 'WG', name: 'Putih Hijau', bgClass: 'wire-stripe-green-white', hex: '#22c55e', isStripe: true },
+            'BL': { id: 'BL', name: 'Biru', bgClass: 'wire-solid-blue', hex: '#1d4ed8', isStripe: false },
+            'WBL':{ id: 'WBL',name: 'Putih Biru', bgClass: 'wire-stripe-blue-white', hex: '#3b82f6', isStripe: true },
+            'G':  { id: 'G',  name: 'Hijau', bgClass: 'wire-solid-green', hex: '#15803d', isStripe: false },
+            'WB': { id: 'WB', name: 'Putih Cokelat', bgClass: 'wire-stripe-brown-white', hex: '#854d0e', isStripe: true },
+            'BR': { id: 'BR', name: 'Cokelat', bgClass: 'wire-solid-brown', hex: '#713f12', isStripe: false }
+        };
+
+        const PRESETS = {
+            '568B': ['WO', 'O', 'WG', 'BL', 'WBL', 'G', 'WB', 'BR'],
+            '568A': ['WG', 'G', 'WO', 'BL', 'WBL', 'O', 'WB', 'BR']
+        };
+
+        const ETHERNET_FUNCTIONS_100M = [
+            'Tx+ (Transmit Data +)',
+            'Tx- (Transmit Data -)',
+            'Rx+ (Receive Data +)',
+            'Unused (Bi-directional)',
+            'Unused (Bi-directional)',
+            'Rx- (Receive Data -)',
+            'Unused (Bi-directional)',
+            'Unused (Bi-directional)'
+        ];
+
+        // CURRENT STATE
+        let currentWiresA = [...PRESETS['568B']];
+        let currentWiresB = [...PRESETS['568B']];
+        let activeTestStep = 0; // 0 = stopped, 1..8 active pin
+        let isAutoTesting = false;
+        let testTimer = null;
+
+        // INITIALIZATION
+        window.onload = function() {
+            renderPinSelectors('A');
+            renderPinSelectors('B');
+            renderWireVisuals();
+            renderTesterLEDs();
+            updateMappingTable();
+            evaluateCableStatus();
+            addLog("Aplikasi siap. Default Ujung A & B diset ke 568B.");
+        };
+
+        // RENDER PIN SELECTOR DROPDOWNS IN LEFT PANEL
+        function renderPinSelectors(end) {
+            const container = document.getElementById(`pins-container-${end}`);
+            const currentArray = (end === 'A') ? currentWiresA : currentWiresB;
+            
+            container.innerHTML = '';
+            
+            currentArray.forEach((colorKey, index) => {
+                const pinNum = index + 1;
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-2 bg-slate-800/60 p-1.5 rounded-lg border border-slate-700/50';
+
+                const pinBadge = document.createElement('span');
+                pinBadge.className = 'w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold font-mono bg-slate-900 text-slate-300 border border-slate-700';
+                pinBadge.innerText = pinNum;
+
+                const colorDot = document.createElement('span');
+                colorDot.id = `dot-${end}-${pinNum}`;
+                colorDot.className = `w-4 h-4 rounded-full border border-slate-600 ${COLOR_DEFINITIONS[colorKey].bgClass}`;
+
+                const select = document.createElement('select');
+                select.className = 'bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded px-2 py-1 flex-1 focus:outline-none focus:border-sky-500';
+                select.onchange = (e) => onPinColorChange(end, index, e.target.value);
+
+                Object.keys(COLOR_DEFINITIONS).forEach(key => {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.innerText = `Pin ${pinNum}: ${COLOR_DEFINITIONS[key].name}`;
+                    if(key === colorKey) option.selected = true;
+                    select.appendChild(option);
+                });
+
+                row.appendChild(pinBadge);
+                row.appendChild(colorDot);
+                row.appendChild(select);
+                container.appendChild(row);
+            });
+        }
+
+        // UPDATE PIN COLOR FROM DROPDOWN
+        function onPinColorChange(end, pinIndex, newColorKey) {
+            if (end === 'A') {
+                currentWiresA[pinIndex] = newColorKey;
+            } else {
+                currentWiresB[pinIndex] = newColorKey;
+            }
+            renderPinSelectors(end);
+            renderWireVisuals();
+            updateMappingTable();
+            evaluateCableStatus();
+            resetTest();
+            addLog(`Ujung ${end} Pin ${pinIndex + 1} diubah ke ${COLOR_DEFINITIONS[newColorKey].name}`);
+        }
+
+        // PRESET BUTTON HANDLER
+        function applyPreset(end, presetKey) {
+            if (end === 'A') {
+                currentWiresA = [...PRESETS[presetKey]];
+            } else {
+                currentWiresB = [...PRESETS[presetKey]];
+            }
+            renderPinSelectors(end);
+            renderWireVisuals();
+            updateMappingTable();
+            evaluateCableStatus();
+            resetTest();
+            addLog(`Ujung ${end} diatur ke standar TIA/EIA ${presetKey}`);
+        }
+
+        // RANDOMIZE WIRES
+        function randomizeWires(end) {
+            const keys = Object.keys(COLOR_DEFINITIONS);
+            const randomArr = [];
+            for (let i = 0; i < 8; i++) {
+                const randomKey = keys[Math.floor(Math.random() * keys.length)];
+                randomArr.push(randomKey);
+            }
+            if (end === 'A') currentWiresA = randomArr;
+            else currentWiresB = randomArr;
+
+            renderPinSelectors(end);
+            renderWireVisuals();
+            updateMappingTable();
+            evaluateCableStatus();
+            resetTest();
+            addLog(`Ujung ${end} diacak (Custom configuration)`);
+        }
+
+        // VISUALIZE RJ45 STRIPES IN MIDDLE PANEL
+        function renderWireVisuals() {
+            const containerA = document.getElementById('wire-visual-A');
+            const containerB = document.getElementById('wire-visual-B');
+
+            containerA.innerHTML = '';
+            containerB.innerHTML = '';
+
+            for (let i = 0; i < 8; i++) {
+                // Strip A
+                const colorA = COLOR_DEFINITIONS[currentWiresA[i]];
+                const stripA = document.createElement('div');
+                stripA.className = `w-full h-full rounded-t ${colorA.bgClass} border-x border-t border-slate-950 flex flex-col justify-end items-center pb-1`;
+                stripA.innerHTML = `<span class="text-[9px] font-bold text-slate-900 bg-white/80 rounded px-0.5">${i+1}</span>`;
+                containerA.appendChild(stripA);
+
+                // Strip B
+                const colorB = COLOR_DEFINITIONS[currentWiresB[i]];
+                const stripB = document.createElement('div');
+                stripB.className = `w-full h-full rounded-t ${colorB.bgClass} border-x border-t border-slate-950 flex flex-col justify-end items-center pb-1`;
+                stripB.innerHTML = `<span class="text-[9px] font-bold text-slate-900 bg-white/80 rounded px-0.5">${i+1}</span>`;
+                containerB.appendChild(stripB);
+            }
+        }
+
+        // HARDWARE TESTER LED GRAPHICS
+        function renderTesterLEDs() {
+            const masterContainer = document.getElementById('master-leds');
+            const remoteContainer = document.getElementById('remote-leds');
+
+            masterContainer.innerHTML = '';
+            remoteContainer.innerHTML = '';
+
+            for (let i = 1; i <= 8; i++) {
+                // Master LED Row
+                const mRow = document.createElement('div');
+                mRow.className = 'flex items-center justify-between bg-slate-950/60 px-2 py-1 rounded border border-slate-800';
+                mRow.innerHTML = `
+                    <span class="text-xs font-mono text-slate-400">PIN ${i}</span>
+                    <span id="m-led-${i}" class="w-3.5 h-3.5 rounded-full bg-slate-800 border border-slate-700 transition"></span>
+                `;
+                masterContainer.appendChild(mRow);
+
+                // Remote LED Row
+                const rRow = document.createElement('div');
+                rRow.className = 'flex items-center justify-between bg-slate-950/60 px-2 py-1 rounded border border-slate-800';
+                rRow.innerHTML = `
+                    <span class="text-xs font-mono text-slate-400">PIN ${i}</span>
+                    <span id="r-led-${i}" class="w-3.5 h-3.5 rounded-full bg-slate-800 border border-slate-700 transition"></span>
+                `;
+                remoteContainer.appendChild(rRow);
+            }
+        }
+
+        // PIN MAPPING LOGIC & MATRIX
+        function getConnectedRemotePin(masterPinIndex) {
+            // Master pin color key (0-indexed)
+            const colorKeyA = currentWiresA[masterPinIndex];
+            
+            // Find where this color goes on B
+            // If multiple identical colors exist, map first matching unused or simple index search
+            const remotePinIndex = currentWiresB.indexOf(colorKeyA);
+            return (remotePinIndex !== -1) ? (remotePinIndex + 1) : null;
+        }
+
+        function updateMappingTable() {
+            const tbody = document.getElementById('mapping-table-body');
+            tbody.innerHTML = '';
+
+            for (let i = 0; i < 8; i++) {
+                const pinA = i + 1;
+                const pinB = getConnectedRemotePin(i);
+                const func = ETHERNET_FUNCTIONS_100M[i];
+                const colorA = COLOR_DEFINITIONS[currentWiresA[i]];
+                
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/40 transition';
+                
+                tr.innerHTML = `
+                    <td class="py-1.5 px-1 text-center font-bold text-sky-400">
+                        <span class="inline-block w-2 h-2 rounded-full mr-1 ${colorA.bgClass}"></span>${pinA}
+                    </td>
+                    <td class="py-1.5 px-1 text-center font-bold ${pinB ? 'text-amber-400' : 'text-rose-500'}">
+                        ${pinB ? 'Pin ' + pinB : 'Open/NC'}
+                    </td>
+                    <td class="py-1.5 px-1 text-[11px] text-slate-300">${func}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+        }
+
+        // EVALUATE CABLE STATUS & TEORI
+        function evaluateCableStatus() {
+            const statusCard = document.getElementById('status-card');
+            const statusIcon = document.getElementById('status-icon');
+            const statusTitle = document.getElementById('status-title');
+            const statusDesc = document.getElementById('status-desc');
+            const theoryContent = document.getElementById('theory-content');
+
+            const isA_568A = arraysEqual(currentWiresA, PRESETS['568A']);
+            const isA_568B = arraysEqual(currentWiresA, PRESETS['568B']);
+            const isB_568A = arraysEqual(currentWiresB, PRESETS['568A']);
+            const isB_568B = arraysEqual(currentWiresB, PRESETS['568B']);
+
+            if ((isA_568B && isB_568B) || (isA_568A && isB_568A)) {
+                // STRAIGHT THROUGH OK
+                const stdName = isA_568B ? 'TIA/EIA 568B - 568B' : 'TIA/EIA 568A - 568A';
+                statusCard.className = "bg-emerald-950/40 border-2 border-emerald-500/80 rounded-xl p-4 text-center transition flex flex-col items-center justify-center gap-2 min-h-[110px] glow-green";
+                statusIcon.className = "fa-solid fa-circle-check text-3xl text-emerald-400";
+                statusTitle.className = "font-bold text-sm text-emerald-300";
+                statusTitle.innerText = "Kabel Straight-Through Sesuai Standard";
+                statusDesc.innerText = `Skema: ${stdName}. Semua pin 1-to-1 terhubung sempurna.`;
+
+                theoryContent.innerHTML = `
+                    <div class="font-bold text-emerald-400 mb-1"><i class="fa-solid fa-link"></i> Penggunaan Kabel Straight:</div>
+                    <p>Digunakan untuk menghubungkan <strong>2 Perangkat yang Berbeda Layer/Jenis (Different Devices)</strong>:</p>
+                    <ul class="list-disc list-inside text-slate-300 space-y-1 pl-1">
+                        <li>Komputer (PC / Laptop) ke Switch / Hub</li>
+                        <li>Router ke Switch / Hub</li>
+                        <li>Switch ke Access Point</li>
+                    </ul>
+                `;
+            } else if ((isA_568A && isB_568B) || (isA_568B && isB_568A)) {
+                // CROSSOVER OK
+                statusCard.className = "bg-sky-950/40 border-2 border-sky-500/80 rounded-xl p-4 text-center transition flex flex-col items-center justify-center gap-2 min-h-[110px] glow-blue";
+                statusIcon.className = "fa-solid fa-right-left text-3xl text-sky-400";
+                statusTitle.className = "font-bold text-sm text-sky-300";
+                statusTitle.innerText = "Kabel Crossover Sesuai Standard";
+                statusDesc.innerText = "Skema: TIA/EIA 568A ke 568B. Tx (Pin 1,2) ditukar ke Rx (Pin 3,6).";
+
+                theoryContent.innerHTML = `
+                    <div class="font-bold text-sky-400 mb-1"><i class="fa-solid fa-right-left"></i> Penggunaan Kabel Crossover:</div>
+                    <p>Digunakan untuk menghubungkan <strong>2 Perangkat yang Sejenis (Same Devices)</strong> tanpa Auto-MDIX:</p>
+                    <ul class="list-disc list-inside text-slate-300 space-y-1 pl-1">
+                        <li>Komputer ke Komputer (PC to PC Direct)</li>
+                        <li>Switch ke Switch / Hub ke Hub</li>
+                        <li>Router ke Router</li>
+                    </ul>
+                `;
+            } else {
+                // MISWIRE OR CUSTOM ERROR
+                const errors = findWiringErrors();
+                statusCard.className = "bg-rose-950/40 border-2 border-rose-500/80 rounded-xl p-4 text-center transition flex flex-col items-center justify-center gap-2 min-h-[110px] glow-red";
+                statusIcon.className = "fa-solid fa-triangle-exclamation text-3xl text-rose-400";
+                statusTitle.className = "font-bold text-sm text-rose-300";
+                statusTitle.innerText = "Wiring Error / Custom Miswire";
+                statusDesc.innerText = errors.length > 0 ? errors.join("; ") : "Urutan warna kawat tidak memenuhi standar TIA/EIA.";
+
+                theoryContent.innerHTML = `
+                    <div class="font-bold text-rose-400 mb-1"><i class="fa-solid fa-bug"></i> Analisis Kerusakan Pengkabelan:</div>
+                    <p>Pola warna kawat ini tidak sesuai standar. Dampak pada jaringan:</p>
+                    <ul class="list-disc list-inside text-slate-300 space-y-1 pl-1">
+                        <li><strong>Cross-talk & Noise:</strong> Pasangan pilinan kawat (twisted pair) tidak sesuai peruntukan frekuensi.</li>
+                        <li><strong>Data Packet Loss:</strong> Tx & Rx mungkin salah terhubung sehingga link DOWN atau Duplex Mismatch.</li>
+                    </ul>
+                `;
+            }
+        }
+
+        function findWiringErrors() {
+            const errs = [];
+            for (let i = 0; i < 8; i++) {
+                if (currentWiresA[i] !== currentWiresB[i]) {
+                    // Check if not crossover pair (1-3, 2-6)
+                    const isCrossPair = (
+                        (i === 0 && currentWiresB[2] === currentWiresA[0]) ||
+                        (i === 1 && currentWiresB[5] === currentWiresA[1]) ||
+                        (i === 2 && currentWiresB[0] === currentWiresA[2]) ||
+                        (i === 5 && currentWiresB[1] === currentWiresA[5])
+                    );
+                    if (!isCrossPair) {
+                        errs.push(`Pin ${i+1} terhubung salah`);
+                    }
+                }
+            }
+            return errs.slice(0, 2); // get max 2 summary
+        }
+
+        function arraysEqual(a, b) {
+            return JSON.stringify(a) === JSON.stringify(b);
+        }
+
+        // CABLE TESTER CONTROL LOGIC
+        function setPowerLed(isOn) {
+            const led = document.getElementById('power-led');
+            if (isOn) {
+                led.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 glow-green";
+            } else {
+                led.className = "w-2.5 h-2.5 rounded-full bg-slate-700";
+            }
+        }
+
+        function highlightLED(masterPinNum) {
+            // Reset all LEDs first
+            for (let i = 1; i <= 8; i++) {
+                const mLed = document.getElementById(`m-led-${i}`);
+                const rLed = document.getElementById(`r-led-${i}`);
+                mLed.className = "w-3.5 h-3.5 rounded-full bg-slate-800 border border-slate-700 transition";
+                rLed.className = "w-3.5 h-3.5 rounded-full bg-slate-800 border border-slate-700 transition";
+            }
+
+            if (!masterPinNum) return;
+
+            // Turn ON Master LED
+            const mLed = document.getElementById(`m-led-${masterPinNum}`);
+            if (mLed) mLed.className = "w-3.5 h-3.5 rounded-full bg-emerald-400 glow-green border border-emerald-200 transition";
+
+            // Turn ON Remote LED according to mapping
+            const remotePinNum = getConnectedRemotePin(masterPinNum - 1);
+            if (remotePinNum) {
+                const rLed = document.getElementById(`r-led-${remotePinNum}`);
+                if (rLed) {
+                    // Check if it's correct mapping according to standard
+                    const isCorrectStraight = (currentWiresA[masterPinNum-1] === currentWiresB[masterPinNum-1]);
+                    const isCorrectCross = (
+                        (masterPinNum === 1 && remotePinNum === 3) ||
+                        (masterPinNum === 2 && remotePinNum === 6) ||
+                        (masterPinNum === 3 && remotePinNum === 1) ||
+                        (masterPinNum === 6 && remotePinNum === 2) ||
+                        (masterPinNum === 4 && remotePinNum === 4) ||
+                        (masterPinNum === 5 && remotePinNum === 5) ||
+                        (masterPinNum === 7 && remotePinNum === 7) ||
+                        (masterPinNum === 8 && remotePinNum === 8)
+                    );
+
+                    const ledColorClass = (isCorrectStraight || isCorrectCross) ? "bg-sky-400 glow-blue border border-sky-200" : "bg-amber-400 glow-red border border-amber-200";
+                    rLed.className = `w-3.5 h-3.5 rounded-full ${ledColorClass} transition`;
+                    addLog(`Scan Pin ${masterPinNum} (Master) -> Pin ${remotePinNum} (Remote) [OK]`);
+                }
+            } else {
+                addLog(`Scan Pin ${masterPinNum} (Master) -> Open / Not Connected [FAIL]`);
+            }
+        }
+
+        function stepTest() {
+            setPowerLed(true);
+            activeTestStep++;
+            if (activeTestStep > 8) {
+                activeTestStep = 1;
+            }
+            highlightLED(activeTestStep);
+        }
+
+        function startAutoTest() {
+            if (isAutoTesting) return;
+
+            isAutoTesting = true;
+            setPowerLed(true);
+            document.getElementById('btn-auto-test').classList.add('opacity-50', 'pointer-events-none');
+            addLog("Mulai Auto Testing scanning (Pin 1 -> 8)...");
+
+            activeTestStep = 0;
+            const speed = parseInt(document.getElementById('test-speed').value, 10);
+
+            testTimer = setInterval(() => {
+                activeTestStep++;
+                if (activeTestStep > 8) {
+                    activeTestStep = 1;
+                }
+                highlightLED(activeTestStep);
+            }, speed);
+        }
+
+        function resetTest() {
+            if (testTimer) clearInterval(testTimer);
+            isAutoTesting = false;
+            activeTestStep = 0;
+            setPowerLed(false);
+            highlightLED(0);
+            document.getElementById('btn-auto-test').classList.remove('opacity-50', 'pointer-events-none');
+            addLog("Pengujian dihentikan / Reset.");
+        }
+
+        // LOGGING UTILITY
+        function addLog(msg) {
+            const logBox = document.getElementById('activity-log');
+            const time = new Date().toLocaleTimeString('id-ID', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const item = document.createElement('div');
+            item.innerHTML = `<span class="text-slate-500">[${time}]</span> ${msg}`;
+            logBox.appendChild(item);
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function clearLogs() {
+            const logBox = document.getElementById('activity-log');
+            logBox.innerHTML = '<div>Log dibersihkan.</div>';
+        }
+    </script>
+</body>
+</html>
